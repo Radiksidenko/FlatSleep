@@ -13,6 +13,8 @@ struct SleepCalendarView: View {
     let calendar = Calendar.current
     let daysInMonth: [Date]
     
+    private let daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"]
+    
     init() {
         let now = Date()
         let currentCalendar = Calendar.current
@@ -33,6 +35,13 @@ struct SleepCalendarView: View {
         }
         
         self.daysInMonth = generatedDays
+    }
+    
+    private var leadingSpaces: Int {
+        guard let firstDay = daysInMonth.first else { return 0 }
+        let weekday = calendar.component(.weekday, from: firstDay)
+        let shiftedWeekday = (weekday + 5) % 7
+        return shiftedWeekday
     }
     
     let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 7)
@@ -65,26 +74,48 @@ struct SleepCalendarView: View {
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(10)
                     
-                    LazyVGrid(columns: columns, spacing: 15) {
-                        ForEach(daysInMonth, id: \.self) { date in
-                            let startOfDay = calendar.startOfDay(for: date)
-                            let daySummary = hkManager.monthlySleepData[startOfDay]
-                            
-                            NavigationLink(destination: SleepDetailView(date: date, summary: daySummary)) {
-                                VStack(spacing: 6) {
-                                    Text("\(calendar.component(.day, from: date))")
-                                        .font(.footnote)
-                                        .bold()
-                                        .foregroundColor(calendar.isDateInToday(date) ? .indigo : .primary)
-                                    
-                                    SleepRingView(summary: daySummary, size: 42)
-                                }
-                                .frame(height: 75)
-                                .frame(maxWidth: .infinity)
-                                .background(calendar.isDateInToday(date) ? Color.indigo.opacity(0.05) : Color.clear)
-                                .cornerRadius(8)
+                    VStack(spacing: 12) {
+                        HStack(spacing: 0) {
+                            ForEach(Array(daysOfWeek.enumerated()), id: \.offset) { index, day in
+                                Text(day)
+                                    .font(.caption)
+                                    .bold()
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.bottom, 4)
+                        
+                        LazyVGrid(columns: columns, spacing: 15) {
+                            
+                            ForEach(0..<leadingSpaces, id: \.self) { _ in
+                                Color.clear
+                                    .frame(height: 75)
+                            }
+                            
+                            ForEach(daysInMonth, id: \.self) { date in
+                                let startOfDay = calendar.startOfDay(for: date)
+                                let daySummary = hkManager.monthlySleepData[startOfDay]
+                                
+                                NavigationLink(destination: SleepDetailView(date: date, summary: daySummary)) {
+                                    VStack(spacing: 6) {
+                                        Text("\(calendar.component(.day, from: date))")
+                                            .font(.footnote)
+                                            .bold()
+                                            .foregroundColor(calendar.isDateInToday(date) ? .white : .primary)
+                                            .frame(width: 24, height: 24)
+                                            .background(calendar.isDateInToday(date) ? Color.red : Color.clear)
+                                            .clipShape(Circle())
+                                        
+                                        SleepRingView(summary: daySummary, size: 42)
+                                    }
+                                    .frame(height: 75)
+                                    .frame(maxWidth: .infinity)
+                                    .background(calendar.isDateInToday(date) ? Color.red.opacity(0.05) : Color.clear)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                     }
                     .padding()
