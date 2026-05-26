@@ -180,8 +180,23 @@ class DebugHealthKitManager: ObservableObject {
                 var newSummaries: [Date: DailySleepSummary] = [:]
                 
                 for sample in categorySamples {
-                    let startOfDay = calendar.startOfDay(for: sample.startDate)
-                    var summary = newSummaries[startOfDay] ?? DailySleepSummary(date: startOfDay)
+                    if sample.value == HKCategoryValueSleepAnalysis.inBed.rawValue {
+                        continue
+                    }
+                    
+                    let endDate = sample.endDate
+                    let hour = calendar.component(.hour, from: endDate)
+                    
+                    let targetDate: Date
+                    if hour >= 18 {
+                        targetDate = calendar.date(byAdding: .day, value: 1, to: endDate) ?? endDate
+                    } else {
+                        targetDate = endDate
+                    }
+                    
+                    let startOfTargetDay = calendar.startOfDay(for: targetDate)
+                    
+                    var summary = newSummaries[startOfTargetDay] ?? DailySleepSummary(date: startOfTargetDay)
                     let duration = sample.endDate.timeIntervalSince(sample.startDate)
                     
                     switch sample.value {
@@ -193,16 +208,18 @@ class DebugHealthKitManager: ObservableObject {
                         summary.remDuration += duration
                     case HKCategoryValueSleepAnalysis.awake.rawValue:
                         summary.awakeDuration += duration
-                    default:
+                    case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue:
                         summary.coreDuration += duration
+                    default:
+                        break
                     }
                     
-                    newSummaries[startOfDay] = summary
+                    newSummaries[startOfTargetDay] = summary
                 }
                 
                 DispatchQueue.main.async {
                     self.monthlySleepData = newSummaries
-                    self.statusMessage = "Data synced!"
+                    self.statusMessage = "Synced with Apple Health"
                 }
             }
             
