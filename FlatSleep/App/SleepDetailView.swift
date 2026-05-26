@@ -56,6 +56,9 @@ struct SleepDetailView: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
+                    SleepLinearTimelineView(samples: summary.samples)
+                        .padding(.horizontal)
+
                     SleepHypnogramView(samples: summary.samples)
                         .padding(.horizontal)
                     
