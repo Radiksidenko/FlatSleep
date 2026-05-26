@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DebugSleepView: View {
-    @StateObject private var hkManager = DebugHealthKitManager()
+    @StateObject private var hkManager = HealthKitManager()
     @State private var selectedDate: Date = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     
     var body: some View {

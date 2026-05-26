@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SleepCalendarView: View {
-    @StateObject private var hkManager = DebugHealthKitManager()
+    @StateObject private var hkManager = HealthKitManager()
     
     let calendar = Calendar.current
     let daysInMonth: [Date]

@@ -1,5 +1,5 @@
 //
-//  DebugHealthKitManager.swift
+//  HealthKitManager.swift
 //  FlatSleep
 //
 //  Created by Radomyr Sidenko on 26.05.2026.
@@ -8,7 +8,7 @@
 import Foundation
 import HealthKit
 
-class DebugHealthKitManager: ObservableObject {
+class HealthKitManager: ObservableObject {
     let healthStore = HKHealthStore()
     
     @Published var statusMessage: String = "Ready to generate"
