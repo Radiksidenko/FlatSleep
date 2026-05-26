@@ -11,7 +11,8 @@ import SwiftUI
 struct FlatSleepApp: App {
     var body: some Scene {
         WindowGroup {
-            DebugSleepView()
+            SleepCalendarView()
+//            DebugSleepView()
         }
     }
 }

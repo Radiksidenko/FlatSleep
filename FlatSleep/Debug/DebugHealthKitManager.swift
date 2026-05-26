@@ -151,6 +151,55 @@ class DebugHealthKitManager: ObservableObject {
         #endif
     }
     
+    @Published var monthlySleepData: [Date: DailySleepSummary] = [:]
+
+    func fetchMonthlySleepData() {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        guard let startDate = calendar.date(byAdding: .day, value: -30, to: now) else { return }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: now, options: [.strictStartDate])
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+        
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
+            guard let self = self, let categorySamples = samples as? [HKCategorySample] else { return }
+            
+            var newSummaries: [Date: DailySleepSummary] = [:]
+            
+            for sample in categorySamples {
+                let startOfDay = calendar.startOfDay(for: sample.startDate)
+                
+                var summary = newSummaries[startOfDay] ?? DailySleepSummary(date: startOfDay)
+                let duration = sample.endDate.timeIntervalSince(sample.startDate)
+                
+                switch sample.value {
+                case HKCategoryValueSleepAnalysis.asleepCore.rawValue:
+                    summary.coreDuration += duration
+                case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
+                    summary.deepDuration += duration
+                case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
+                    summary.remDuration += duration
+                case HKCategoryValueSleepAnalysis.awake.rawValue:
+                    summary.awakeDuration += duration
+                default:
+                    break
+                }
+                
+                newSummaries[startOfDay] = summary
+            }
+            
+            DispatchQueue.main.async {
+                self.monthlySleepData = newSummaries
+                self.statusMessage = "Data loaded successfully!"
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
     private func updateStatus(_ message: String) {
         DispatchQueue.main.async {
             self.statusMessage = message
