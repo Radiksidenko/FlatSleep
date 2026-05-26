@@ -214,7 +214,15 @@ class DebugHealthKitManager: ObservableObject {
                         break
                     }
                     
+                    let interval = SleepInterval(startDate: sample.startDate, endDate: sample.endDate, value: sample.value)
+                    summary.samples.append(interval)
+                    
                     newSummaries[startOfTargetDay] = summary
+                }
+                
+                for (date, var summary) in newSummaries {
+                    summary.samples.sort { $0.startDate < $1.startDate }
+                    newSummaries[date] = summary
                 }
                 
                 DispatchQueue.main.async {
