@@ -70,17 +70,21 @@ struct SleepCalendarView: View {
                             let startOfDay = calendar.startOfDay(for: date)
                             let daySummary = hkManager.monthlySleepData[startOfDay]
                             
-                            VStack(spacing: 6) {
-                                Text("\(calendar.component(.day, from: date))")
-                                    .font(.footnote)
-                                    .bold()
-                                    .foregroundColor(calendar.isDateInToday(date) ? .indigo : .primary)
-                                
-                                SleepRingView(summary: daySummary, size: 42)
+                            NavigationLink(destination: SleepDetailView(date: date, summary: daySummary)) {
+                                VStack(spacing: 6) {
+                                    Text("\(calendar.component(.day, from: date))")
+                                        .font(.footnote)
+                                        .bold()
+                                        .foregroundColor(calendar.isDateInToday(date) ? .indigo : .primary)
+                                    
+                                    SleepRingView(summary: daySummary, size: 42)
+                                }
+                                .frame(height: 75)
+                                .frame(maxWidth: .infinity)
+                                .background(calendar.isDateInToday(date) ? Color.indigo.opacity(0.05) : Color.clear)
+                                .cornerRadius(8)
                             }
-                            .frame(height: 75)
-                            .background(calendar.isDateInToday(date) ? Color.indigo.opacity(0.05) : Color.clear)
-                            .cornerRadius(8)
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .padding()
