@@ -153,7 +153,8 @@ class HealthKitManager: ObservableObject {
     
     @Published var monthlySleepData: [Date: DailySleepSummary] = [:]
 
-    func fetchMonthlySleepData() {
+    func fetchMonthlySleepData(from startDate: Date) {
+        
         guard HKHealthStore.isHealthDataAvailable() else { return }
         
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
@@ -167,11 +168,7 @@ class HealthKitManager: ObservableObject {
             }
             
             let calendar = Calendar.current
-            let now = Date()
-            
-            guard let startDate = calendar.date(byAdding: .day, value: -30, to: now) else { return }
-            
-            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: now, options: [.strictStartDate])
+            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: Date(), options: .strictStartDate)
             let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             
             let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in

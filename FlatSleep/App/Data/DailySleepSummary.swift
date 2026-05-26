@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 struct SleepInterval: Identifiable {
     let id = UUID()
