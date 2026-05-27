@@ -23,6 +23,9 @@ struct DailySleepSummary {
     
     var samples: [SleepInterval] = []
     
+    var averageHeartRate: Double?
+    var averageRespiratoryRate: Double?
+    
     var totalSleepTime: TimeInterval {
         return coreDuration + deepDuration + remDuration
     }
