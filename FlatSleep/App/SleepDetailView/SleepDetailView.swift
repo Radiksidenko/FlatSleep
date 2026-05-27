@@ -17,6 +17,8 @@ struct SleepDetailView: View {
     @AppStorage("enableHeartRateAnalysis") private var enableHeartRateAnalysis = false
     @AppStorage("enableRespiratoryRateAnalysis") private var enableRespiratoryRateAnalysis = false
     
+    @AppStorage("selectedChartView") private var selectedChartView = "Timeline"
+    
     @State private var realAverageHeartRate: Double? = nil
     @State private var realAverageRespiratoryRate: Double? = nil
     
@@ -50,11 +52,13 @@ struct SleepDetailView: View {
                     )
                     .padding(.horizontal)
                     
-                    SleepLinearTimelineView(samples: summary.samples)
-                        .padding(.horizontal)
-
-                    SleepHypnogramView(samples: summary.samples)
-                        .padding(.horizontal)
+                    if selectedChartView == "Timeline" {
+                        SleepLinearTimelineView(samples: summary.samples)
+                            .padding(.horizontal)
+                    } else {
+                        SleepHypnogramView(samples: summary.samples)
+                            .padding(.horizontal)
+                    }
                     
                     VStack(spacing: 0) {
                         Text("SLEEP STAGES & METRICS")
