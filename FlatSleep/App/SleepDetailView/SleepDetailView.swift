@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct SleepDetailView: View {
-    let date: Date
-    let summary: DailySleepSummary?
+    let initialDate: Date
     
     @StateObject private var manager = HealthKitManager()
+    
+    @State private var selectedDate: Date
     
     @AppStorage("enablePenalties") private var enablePenalties = false
     @AppStorage("enableHeartRateAnalysis") private var enableHeartRateAnalysis = false
@@ -27,6 +28,102 @@ struct SleepDetailView: View {
         df.dateFormat = "d MMMM yyyy"
         return df
     }()
+    
+    init(date: Date, summary: DailySleepSummary?) {
+        self.initialDate = date
+        self._selectedDate = State(initialValue: Calendar.current.startOfDay(for: date))
+    }
+    
+    private var swipeableDates: [Date] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: initialDate)
+        return (-15...15).compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: dayOffset, to: startOfDay)
+        }
+    }
+    
+    private func summary(for date: Date) -> DailySleepSummary? {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        return manager.monthlySleepData[startOfDay]
+    }
+    
+    var body: some View {
+        TabView(selection: $selectedDate) {
+            ForEach(swipeableDates, id: \.self) { day in
+                SleepDayDetailContent(
+                    summary: summary(for: day),
+                    selectedChartView: selectedChartView,
+                    enableHeartRateAnalysis: enableHeartRateAnalysis,
+                    enableRespiratoryRateAnalysis: enableRespiratoryRateAnalysis,
+                    realAverageHeartRate: realAverageHeartRate,
+                    realAverageRespiratoryRate: realAverageRespiratoryRate,
+                    manager: manager
+                )
+                .tag(day)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle(formatter.string(from: selectedDate))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: SleepSettingsView()) {
+                    Image(systemName: "gearshape")
+                        .font(.body)
+                }
+            }
+        }
+        .onAppear {
+            let calendar = Calendar.current
+            if let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: initialDate) {
+                manager.fetchMonthlySleepData(from: oneMonthAgo)
+            }
+            loadHealthMetricsForCurrentDate()
+        }
+        .onChange(of: manager.monthlySleepData) { _, _ in
+            loadHealthMetricsForCurrentDate()
+        }
+        .onChange(of: selectedDate) { _, _ in
+            realAverageHeartRate = nil
+            realAverageRespiratoryRate = nil
+            loadHealthMetricsForCurrentDate()
+        }
+        .onChange(of: AnalysisFlags(enableHeartRateAnalysis, enableRespiratoryRateAnalysis, enablePenalties)) {
+            if enableHeartRateAnalysis || enableRespiratoryRateAnalysis || enablePenalties {
+                loadHealthMetricsForCurrentDate()
+            }
+        }
+    }
+    
+    private func loadHealthMetricsForCurrentDate() {
+        guard let currentSummary = summary(for: selectedDate), !currentSummary.samples.isEmpty else { return }
+        
+        let startSleep = currentSummary.samples.map { $0.startDate }.min() ?? selectedDate
+        let endSleep = currentSummary.samples.map { $0.endDate }.max() ?? selectedDate
+        
+        if enableHeartRateAnalysis && realAverageHeartRate == nil {
+            manager.fetchAverageHeartRate(from: startSleep, to: endSleep) { avgHR in
+                self.realAverageHeartRate = avgHR
+            }
+        }
+        
+        if enableRespiratoryRateAnalysis && realAverageRespiratoryRate == nil {
+            manager.fetchAverageRespiratoryRate(from: startSleep, to: endSleep) { avgRR in
+                self.realAverageRespiratoryRate = avgRR
+            }
+        }
+    }
+}
+
+struct SleepDayDetailContent: View {
+    let summary: DailySleepSummary?
+    let selectedChartView: String
+    let enableHeartRateAnalysis: Bool
+    let enableRespiratoryRateAnalysis: Bool
+    let realAverageHeartRate: Double?
+    let realAverageRespiratoryRate: Double?
+    let manager: HealthKitManager
     
     private var scoreResult: (score: Int, verdict: String) {
         if var currentSummary = summary {
@@ -104,7 +201,7 @@ struct SleepDetailView: View {
                     
                 } else {
                     VStack(spacing: 15) {
-                        Spacer(minLength: 50)
+                        Spacer(minLength: 120)
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 64))
                             .foregroundColor(.secondary.opacity(0.5))
@@ -115,44 +212,6 @@ struct SleepDetailView: View {
                 }
             }
             .padding(.top, 10)
-        }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
-        .navigationTitle(formatter.string(from: date))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: SleepSettingsView()) {
-                    Image(systemName: "gearshape")
-                        .font(.body)
-                }
-            }
-        }
-        .onAppear {
-            loadHealthMetricsIfNeeded()
-        }
-        .onChange(of: AnalysisFlags(enableHeartRateAnalysis, enableRespiratoryRateAnalysis, enablePenalties)) {
-            if enableHeartRateAnalysis || enableRespiratoryRateAnalysis || enablePenalties {
-                loadHealthMetricsIfNeeded()
-            }
-        }
-    }
-    
-    private func loadHealthMetricsIfNeeded() {
-        guard let samples = summary?.samples, !samples.isEmpty else { return }
-        
-        let startSleep = samples.map { $0.startDate }.min() ?? date
-        let endSleep = samples.map { $0.endDate }.max() ?? date
-        
-        if enableHeartRateAnalysis && realAverageHeartRate == nil {
-            manager.fetchAverageHeartRate(from: startSleep, to: endSleep) { avgHR in
-                self.realAverageHeartRate = avgHR
-            }
-        }
-        
-        if enableRespiratoryRateAnalysis && realAverageRespiratoryRate == nil {
-            manager.fetchAverageRespiratoryRate(from: startSleep, to: endSleep) { avgRR in
-                self.realAverageRespiratoryRate = avgRR
-            }
         }
     }
 }

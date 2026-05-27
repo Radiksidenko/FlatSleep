@@ -7,14 +7,14 @@
 
 import Foundation
 
-struct SleepInterval: Identifiable {
+struct SleepInterval: Identifiable, Equatable {
     let id = UUID()
     let startDate: Date
     let endDate: Date
     let value: Int
 }
 
-struct DailySleepSummary {
+struct DailySleepSummary: Equatable {
     let date: Date
     var coreDuration: TimeInterval = 0
     var deepDuration: TimeInterval = 0
