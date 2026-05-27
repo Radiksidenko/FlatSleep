@@ -14,6 +14,6 @@ FlatSleep is a native SwiftUI sleep tracking and analytics application integrate
 
 ## Screenshots
 
-| | | | |
-| :--- | :---: | :---: | ---: |
-| <img width="294" height="639" alt="1" src="https://github.com/user-attachments/assets/677def30-1ad1-41c2-bbe4-67f2522308f0" />| <img width="294" height="639" alt="2" src="https://github.com/user-attachments/assets/8de98786-f8fa-462e-99d9-919c79dcd3ca" />|  <img width="294" height="639" alt="3" src="https://github.com/user-attachments/assets/706e3de2-69ac-4e5c-aa7a-3c0714644958" />| <img width="294" height="639" alt="4" src="https://github.com/user-attachments/assets/b278f838-1e18-415f-b68e-b29e0c5aa1fe" />
+||||||
+| :--- | :---: | :---: | :---: | ---: |
+| <img width="294" height="639" alt="1" src="https://github.com/user-attachments/assets/677def30-1ad1-41c2-bbe4-67f2522308f0" />| <img width="294" height="639" alt="2" src="https://github.com/user-attachments/assets/8de98786-f8fa-462e-99d9-919c79dcd3ca" />| <img width="294" height="639" alt="2" src="https://github.com/user-attachments/assets/60f43e55-5bbc-44ef-822f-8b6a53238cd1" /> | <img width="294" height="639" alt="1" src="https://github.com/user-attachments/assets/bff8a229-37ee-4f4b-9bfd-e220b82273b0" />| <img width="294" height="639" alt="4" src="https://github.com/user-attachments/assets/b278f838-1e18-415f-b68e-b29e0c5aa1fe" />
