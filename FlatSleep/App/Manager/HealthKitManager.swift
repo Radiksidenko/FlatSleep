@@ -140,12 +140,17 @@ class HealthKitManager: ObservableObject {
             return
         }
         
-        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
-            self.updateStatus("Failed to create type SleepAnalysis")
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
+              let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
+              let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else {
+            self.updateStatus("Failed to create HealthKit types")
             return
         }
         
-        healthStore.requestAuthorization(toShare: [sleepType], read: [sleepType]) { [weak self] success, error in
+        let typesToShare: Set<HKSampleType> = [sleepType, heartRateType, respiratoryType]
+        let typesToRead: Set<HKObjectType> = [sleepType, heartRateType, respiratoryType]
+        
+        healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { [weak self] success, error in
             guard let self = self else { return }
             
             if !success {
@@ -167,7 +172,7 @@ class HealthKitManager: ObservableObject {
             
             let timeInBedEnd = calendar.date(byAdding: .minute, value: Int.random(in: 10...15), to: timeAsleepEnd)!
             
-            var samples: [HKCategorySample] = []
+            var objectsToSave: [HKSample] = []
             
             let inBedSample = HKCategorySample(
                 type: sleepType,
@@ -175,10 +180,9 @@ class HealthKitManager: ObservableObject {
                 start: timeInBedStart,
                 end: timeInBedEnd
             )
-            samples.append(inBedSample)
+            objectsToSave.append(inBedSample)
             
             var currentPhaseStart = timeAsleepStart
-            
             let sleepPhases: [HKCategoryValueSleepAnalysis] = [.asleepCore, .asleepCore, .asleepDeep, .asleepREM]
             
             while currentPhaseStart < timeAsleepEnd {
@@ -197,7 +201,7 @@ class HealthKitManager: ObservableObject {
                     start: currentPhaseStart,
                     end: currentPhaseEnd
                 )
-                samples.append(phaseSample)
+                objectsToSave.append(phaseSample)
                 
                 if Bool.random() && currentPhaseEnd < timeAsleepEnd {
                     let awakeDuration = TimeInterval(Int.random(in: 2...6) * 60)
@@ -211,7 +215,7 @@ class HealthKitManager: ObservableObject {
                         start: currentPhaseEnd,
                         end: awakeEnd
                     )
-                    samples.append(awakeSample)
+                    objectsToSave.append(awakeSample)
                     
                     currentPhaseStart = awakeEnd
                 } else {
@@ -219,13 +223,37 @@ class HealthKitManager: ObservableObject {
                 }
             }
             
-            self.healthStore.save(samples) { success, error in
+            let randomBPM = Double.random(in: 55.0...75.0)
+            let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
+            let heartRateQuantity = HKQuantity(unit: heartRateUnit, doubleValue: randomBPM)
+            
+            let heartRateSample = HKQuantitySample(
+                type: heartRateType,
+                quantity: heartRateQuantity,
+                start: timeAsleepStart,
+                end: timeAsleepEnd
+            )
+            objectsToSave.append(heartRateSample)
+            
+            let randomBreaths = Double.random(in: 12.0...19.0)
+            let respiratoryUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
+            let respiratoryQuantity = HKQuantity(unit: respiratoryUnit, doubleValue: randomBreaths)
+            
+            let respiratorySample = HKQuantitySample(
+                type: respiratoryType,
+                quantity: respiratoryQuantity,
+                start: timeAsleepStart,
+                end: timeAsleepEnd
+            )
+            objectsToSave.append(respiratorySample)
+            
+            self.healthStore.save(objectsToSave) { success, error in
                 if success {
                     let formatter = DateFormatter()
                     formatter.dateStyle = .short
                     let dateString = formatter.string(from: targetDate)
                     let hoursString = String(format: "%.1f", totalSleepHours)
-                    self.updateStatus("🎉 Generated \(hoursString)h of sleep (with Awakes) for \(dateString)!")
+                    self.updateStatus("🎉 Generated \(hoursString)h sleep, Pulse (\(Int(randomBPM)) bpm) & Breath (\(String(format: "%.1f", randomBreaths)) rr) for \(dateString)!")
                 } else {
                     self.updateStatus("Saving error: \(error?.localizedDescription ?? "")")
                 }
